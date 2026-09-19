@@ -65,9 +65,15 @@ git commit -m $Message | Out-Null
 
 # ---------- 5. 推送 ----------
 Write-Step '推送到 origin'
-git push 2>&1 | ForEach-Object { Write-Host $_ }
+# git 把进度信息写到 stderr；在 ErrorActionPreference='Stop' 下再配合 2>&1，
+# PowerShell 会把它当成致命错误而中断脚本。这里临时放行，只按退出码判断成败。
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+git push
+$pushCode = $LASTEXITCODE
+$ErrorActionPreference = $prevEap
 
-if ($LASTEXITCODE -ne 0) {
+if ($pushCode -ne 0) {
     Write-Bad '推送失败。若提示认证问题，请检查 Windows 凭据管理器里的 git:https://github.com。'
     exit 1
 }
